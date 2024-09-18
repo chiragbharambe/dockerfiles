@@ -1,0 +1,58 @@
+# Use NVIDIA CUDA base image with Alpine Linux
+FROM nvidia/cuda:12.2.0-devel-alpine3.18
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    PIP_DEFAULT_TIMEOUT=100
+
+# Install system dependencies
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    git \
+    build-base \
+    python3-dev \
+    openblas-dev \
+    ffmpeg \
+    libsndfile
+
+# Upgrade pip and install PyTorch with CUDA support
+RUN pip3 install --upgrade pip && \
+    pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu124
+
+# Clone ComfyUI repository
+WORKDIR /app
+RUN git clone https://github.com/comfyanonymous/ComfyUI .
+
+# Install Python dependencies
+RUN pip3 install \
+    torchsde \
+    einops \
+    transformers>=4.28.1 \
+    tokenizers>=0.13.3 \
+    sentencepiece \
+    safetensors>=0.4.2 \
+    aiohttp \
+    pyyaml \
+    Pillow \
+    scipy \
+    tqdm \
+    psutil \
+    kornia>=0.7.1 \
+    spandrel \
+    soundfile
+
+# Create directories for models
+RUN mkdir -p models/checkpoints models/vae
+
+# Set the working directory
+WORKDIR /app
+
+# Expose the default port
+EXPOSE 8188
+
+# Run ComfyUI
+CMD ["python3", "main.py", "--listen"]
